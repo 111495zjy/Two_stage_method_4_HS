@@ -18,16 +18,16 @@ def config_parser():
     parser.add_argument('--exp_name', '-n', type=str, help='Experiment name')
     parser.add_argument('--data_path', '-d', type=str, help='Path of events.npy to train')
     parser.add_argument('--output_dir', '-o', type=str, default='logs', help='Directory to save output')
-    parser.add_argument('--t_start', type=float, default=1.2, help='Start time')
-    parser.add_argument('--t_end', type=float, default=1.9, help='End time')
+    parser.add_argument('--t_start', type=float, default=0, help='Start time')
+    parser.add_argument('--t_end', type=float, default=2, help='End time')
     parser.add_argument('--H', type=int, default=480, help='Height of frames')
     parser.add_argument('--W', type=int, default=640, help='Width of frames')
     parser.add_argument('--color_event', action='store_true', default=False, help='Whether to use color event')
     parser.add_argument('--event_thresh', type=float, default=1, help='Event activation threshold')
-    parser.add_argument('--train_resolution', type=int, default=10, help='Number of training frames')
+    parser.add_argument('--train_resolution', type=int, default=60, help='Number of training frames')
     parser.add_argument('--val_resolution', type=int, default=50, help='Number of validation frames')
-    parser.add_argument('--no_c2f', action='store_true', default=False, help='Whether to use coarse-to-fine training')
-    parser.add_argument('--iters', type=int, default=2000, help='Training iterations')
+    parser.add_argument('--no_c2f', action='store_true', default=True, help='Whether to use coarse-to-fine training')
+    parser.add_argument('--iters', type=int, default=1000, help='Training iterations')
     parser.add_argument('--log_interval', type=int, default=100, help='Logging interval')
     parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
     parser.add_argument('--net_layers', type=int, default=3, help='Number of layers in the network')
@@ -93,7 +93,7 @@ def main(args):
         optimizer.zero_grad()
         log_intensity_preds = model2(event_TS)
 
-        loss = model2.get_losses(log_intensity_preds, events.event_frames[low_speed_frame_number],image_stage1)
+        loss = model2.get_losses(log_intensity_preds, events.event_frames[0:low_speed_frame_number],image_stage1)
         loss.backward()
         optimizer.step()
         if i_iter % args.log_interval == 0:
@@ -106,9 +106,9 @@ def main(args):
 
 #reference
     with torch.no_grad():
-        event_TS_all = events.get_TS(events.timestamps) #event_data.py
+        event_TS_all = events.get_TS(events.timestamps,args.train_resolution) #event_data.py
         #val_timestamps = torch.linspace(0, 1, args.val_resolution).to(args.device).reshape(-1, 1)
-        log_intensity_preds = model2(events.timestamps,event_TS_all)
+        log_intensity_preds = model2(event_TS_all)
         intensity_preds = model2.tonemapping(log_intensity_preds).squeeze(-1)
         for i in range(0, intensity_preds.shape[0]):
             intensity1 = intensity_preds[i].cpu().detach().numpy()
@@ -123,10 +123,7 @@ def main(args):
 
 
 
-
-
 if __name__ == '__main__':
     parser = config_parser()
     args = parser.parse_args()
     main(args)
-
