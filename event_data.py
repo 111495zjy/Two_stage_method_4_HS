@@ -58,7 +58,7 @@ class EventData():
         events_TS = []
         for i, time_current in enumerate(timestampes):
             event_TS = self.generate_time_surface(t, x, y, time_current, 0.1, (480, 640))
-            events_TS.append(event_TS.reshape(-1))
+            events_TS.append(event_TS)#.reshape(-1)
             print("finish_TS({})",i)
         events_TS = np.stack(events_TS, axis=0)
         events_TS = torch.as_tensor(events_TS).float().to(self.device)
