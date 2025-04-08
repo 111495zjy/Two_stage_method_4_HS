@@ -64,9 +64,29 @@ class EventData():
         events_TS = torch.as_tensor(events_TS).float().to(self.device)
         return events_TS
       
+
+
     def generate_time_surface(self,t, x, y, t_current, tau=0.1, resolution=(480, 640)):
-        time_surface = np.zeros(resolution)
-        valid_indices = np.where(t <= t_current.cpu().detach().numpy())[0]
-        for i in valid_indices:
-            time_surface[int(y[i]), int(x[i])] = np.exp(-(t_current.cpu().detach().numpy() - t[i]) / tau)
+        H, W = resolution
+        t_current = t_current.cpu().detach().numpy()
+     # 过滤有效事件
+        valid_mask = t <= t_current
+        t_valid = t[valid_mask]
+        x_valid = x[valid_mask]
+        y_valid = y[valid_mask]
+
+    # 将 (x, y) 映射到1D索引，便于聚合操作
+        flat_indices = y_valid * W + x_valid
+
+    # 对于每个位置，记录最近一次事件时间，先初始化为 -1
+        latest_time = np.full(H * W, -1.0, dtype=np.float32)
+        flat_indices = flat_indices.astype(np.int64)
+    # 使用 np.maximum.at 实现按位置聚合最大值（即最近事件）
+        np.maximum.at(latest_time, flat_indices, t_valid)
+
+    # 生成时间表面
+        delta_t = t_current - latest_time
+        ts_flat = np.exp(-delta_t / tau, where=latest_time > 0, out=np.zeros_like(delta_t))
+        time_surface = ts_flat.reshape(H, W)
+
         return time_surface
