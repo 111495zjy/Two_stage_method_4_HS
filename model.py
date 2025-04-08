@@ -88,7 +88,8 @@ class EvINRModel_stage2(nn.Module):
         const_loss = 0.1 * torch.var(
             log_intensity_preds.reshape(log_intensity_preds.shape[0], -1).mean(dim=-1)
         )
-        return (temperal_loss + temperal_loss2 + spatial_loss + const_loss)
+        return (temperal_loss2)
+        #return (temperal_loss + temperal_loss2 + spatial_loss + const_loss)
     def tonemapping(self, log_intensity_preds, gamma=0.6):
         intensity_preds = torch.exp(log_intensity_preds).detach()
         # Reinhard tone-mapping
@@ -165,4 +166,4 @@ class SineLayer(nn.Module):
         if self.is_last:
             return self.omega_0 * self.linear(input)
         else:
-            return torch.sin(omega)*torch.exp(-scale.abs().square()-scale_orth.abs().square())
+            return torch.sin(omega)#*torch.exp(-scale.abs().square()-scale_orth.abs().square())
