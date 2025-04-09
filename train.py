@@ -29,7 +29,7 @@ def config_parser():
     parser.add_argument('--train_resolution', type=int, default=100, help='Number of training frames')
     parser.add_argument('--val_resolution', type=int, default=100, help='Number of validation frames')
     parser.add_argument('--no_c2f', action='store_true', default=True, help='Whether to use coarse-to-fine training')
-    parser.add_argument('--iters', type=int, default=10, help='Training iterations')
+    parser.add_argument('--iters', type=int, default=1000, help='Training iterations')
     parser.add_argument('--log_interval', type=int, default=2000, help='Logging interval')
     parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
     parser.add_argument('--net_layers', type=int, default=3, help='Number of layers in the network')
@@ -97,6 +97,7 @@ def main(args):
     encoder_weights=None,
     in_channels=1,
     classes=1,
+    activation=None,
     ).to(args.device)
     # ======= 训练设置 =======
     #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -125,10 +126,11 @@ def main(args):
         event_TS_all = events.get_TS(events.timestamps,args.train_resolution) #event_data.py
         #val_timestamps = torch.linspace(0, 1, args.val_resolution).to(args.device).reshape(-1, 1)
         #log_intensity_preds = model2(event_TS_all)
-        intensity_preds = model2(event_TS_all)
+        for i in range(args.train_resolution):
+            intensity_preds = model2(event_TS_all[i].unsqueeze(0).unsqueeze(0))
         #intensity_preds = model2.tonemapping(log_intensity_preds).squeeze(-1)
-        for i in range(0, intensity_preds.shape[0]):
-            intensity1 = intensity_preds[i].cpu().detach().numpy()
+
+            intensity1 = intensity_preds.squeeze().cpu().detach().numpy()
             image_data = (intensity1*255).astype(np.uint8)
 
             # 将 NumPy 数组转换为 PIL 图像对象
